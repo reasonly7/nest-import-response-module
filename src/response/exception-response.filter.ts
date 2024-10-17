@@ -17,12 +17,20 @@ class ExceptionResponseFilter implements ExceptionFilter {
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
 
-    const code =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-    const message =
-      (exception as HttpException).message || 'Internal Server Unknown Error';
+    let code = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal Server Unknown Error';
+
+    if (exception instanceof HttpException) {
+      code = exception.getStatus();
+      message = exception.message;
+
+      // Compatible with ValidationPipe
+      const msgList = (exception.getResponse() as { message: string[] })
+        .message;
+      if (msgList && Array.isArray(msgList) && msgList.length > 0) {
+        message = msgList[0];
+      }
+    }
 
     const responseBody = { data: null, message, code, success: false };
 
